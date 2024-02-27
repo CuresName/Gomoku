@@ -1,0 +1,157 @@
+﻿<html>
+    <head>
+        <style>
+        .Cell {
+            width:30px;
+            height:30px;
+            border:1px solid #000;
+            background-color:dimgray;
+        }
+        .gameBoard{
+            width:300px;
+            height:300px;
+            display:flex;
+            flex-wrap:wrap;
+        }
+        .opened{
+            background-color:transparent;
+        }
+
+        </style>
+    </head>
+    <body>
+
+    @{
+        string[,] mine = (string[,])TempData["mine"];
+        int rows = mine.GetLength(0);
+        int cols = mine.GetLength(1);
+    }
+    <div class="gameBoard" id="gameBoard">
+
+   
+    @for (int i = 0; i < rows; i++)
+    {
+            @for (int j = 0; j < cols; j++)
+            {
+                <div class="Cell" data-row="@i" data-col="@j">
+                    <span>@mine[i, j]</span>
+                </div>
+            }
+    }
+    </div>
+    </body>
+</html>
+<script>
+    $(document).ready(function () {
+        // var grid = MinePlent();
+        // for (var i = 0; i < 10; i++) {
+        //     for (var j = 0; j < 10; j++) {
+        //         var item = document.createElement("span");
+        //         item.textContent = grid[i][j]; // 设置 span 的文本内容为 grid 中对应位置的值
+        //         $(".Cell[data-row='" + i + "'][data-col='" + j + "']").append(item); // 将 span 添加到单元格中
+        //     }
+        // }
+    });
+    $(document).ready(function () {
+        var gameBoard = $("#gameBoard");
+        // 获取所有单元格元素
+        var cells = gameBoard.find(".Cell");
+        // 为每个单元格添加点击事件监听器
+        cells.click(openCell);
+        cells.children("span").attr("hidden", true);
+    });
+        // 定义相邻格子的相对坐标偏移量
+        var offsets = [
+            { row: -1, col: -1 },
+            { row: -1, col: 0 },
+            { row: -1, col: 1 },
+            { row: 0, col: -1 },
+            { row: 0, col: 1 },
+            { row: 1, col: -1 },
+            { row: 1, col: 0 },
+            { row: 1, col: 1 }
+        ];
+
+    function openCell() {
+        var cell = $(this);
+        var row = cell.attr("data-row");
+        var col = cell.attr("data-col");
+        console.log("Cell clicked - Row: " + row + ", Col: " + col);
+        cell.addClass("opened");
+        var span = cell.children("span");
+        span.attr("hidden", false);
+        if (span.html() == "0") {
+            for (var i = 0; i < offsets.length; i++) {
+                var offset = offsets[i];
+                var newRow = parseInt(row) + offset.row;
+                var newCol = parseInt(col) + offset.col;
+                $(".Cell[data-row='" + newRow + "'][data-col='" + newCol + "']").addClass("opened");
+                $(".Cell[data-row='" + newRow + "'][data-col='" + newCol + "'] span").attr("hidden", false);
+            }
+            
+        }
+    }
+    // function gameReset() {
+    //     var gameBoard = $("#gameBoard");
+    //     // for (var i = 0; i < 10; i++) {
+    //     //     for (var j = 0; j < 10; j++) {
+    //     //         var cell = $("<div></div>").addClass("Cell")[0];
+    //     //         cell.setAttribute("data-row", i); // 设置data-row属性
+    //     //         cell.setAttribute("data-col", j); // 设置data-col属性
+    //     //         cell.addEventListener("click",openCell)
+    //     //         gameBoard.append($(cell)); // 添加到游戏板上
+    //     //     }
+    //     // }
+    // }
+
+    // function MinePlent() {
+    //     var items = "X";
+    //     var grid = [];
+
+    //     // 先填充空格子
+    //     for (var r = 0; r < 10; r++) {
+    //         grid[r] = []; // 创建二维数组的行
+    //         for (var c = 0; c < 10; c++) {
+    //             grid[r][c] = 0; // 使用 null 表示空格子
+    //         }
+    //     }
+    //     // 随机放入物品
+    //     for (var i = 0; i < 20; i++) {
+    //         var randomRow = Math.floor(Math.random() * 10); // 随机选择一个位置
+    //         var randomCol = Math.floor(Math.random() * 10); // 随机选择一个位置
+    //         // 如果该位置为空，则放入物品，否则重新选择位置
+    //         if (grid[randomRow][randomCol] == 0) {
+    //             grid[randomRow][randomCol] = items;
+    //             CountMine(randomRow, randomCol, grid);
+    //         } else {
+    //             i--; // 重新选择位置
+    //         }
+    //     }
+    //     return grid;
+    // }
+    // function CountMine(r,c,grid) {
+    //     // 定义相邻格子的相对坐标偏移量
+    //     var offsets = [
+    //         { row: -1, col: -1 },
+    //         { row: -1, col: 0 },
+    //         { row: -1, col: 1 },
+    //         { row: 0, col: -1 },
+    //         { row: 0, col: 1 },
+    //         { row: 1, col: -1 },
+    //         { row: 1, col: 0 },
+    //         { row: 1, col: 1 }
+    //     ];
+
+    //     // 遍历相邻格子
+    //     for (var i = 0; i < offsets.length; i++) {
+    //         var offset = offsets[i];
+    //         var newRow = r + offset.row;
+    //         var newCol = c + offset.col;
+    //         // 检查新坐标是否在合法范围内，并且该格子不为雷
+    //         if (newRow >= 0 && newRow < 10 && newCol >= 0 && newCol < 10 && grid[newRow][newCol] != "X") {
+    //             grid[newRow][newCol] += 1;
+    //         }
+    //     }
+    
+
+</script>

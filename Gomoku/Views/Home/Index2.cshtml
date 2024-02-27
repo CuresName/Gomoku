@@ -1,0 +1,344 @@
+﻿<html>
+<head>
+    <style>
+        .grid-item {
+            background-color: #8B4513;
+            width: 20px;
+            height: 20px;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .grid-container {
+            display: flex;
+            width: 300px; /* 设置 grid 容器的宽度 */
+            height: 300px; /* 设置 grid 容器的高度 */
+            background-color: #000;
+            flex-wrap: wrap;
+            position: relative;
+        }
+
+            .grid-container::after {
+                content: "";
+                border: 9px solid #8B4513;
+                position: absolute;
+                top: 0;
+                bottom: 0;
+                left: 0;
+                right: 0;
+            }
+
+        .grid-item::before {
+            content: "";
+            position: absolute;
+            border: 1px solid #000;
+            left: 0px;
+            right: 0px;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+
+        .grid-item::after {
+            content: "";
+            position: absolute;
+            border: 1px solid #000;
+            top: 0px;
+            bottom: 0px;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        .piece {
+            border-radius: 50%;
+            border: transparent;
+            width: 15px;
+            height: 15px;
+            z-index: 1;
+            background-color: transparent;
+        }
+
+            .piece:hover {
+                background-color: rgba(0, 0, 0,50%);
+            }
+
+        #IDList div {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+        }
+
+        .pieces {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+        }
+        .player1 {
+            background-color: #000;
+        }
+
+        .player2 {
+            background-color: #fff;
+            border: 0.5px solid #000;
+        }
+
+        .list-group {
+            width: 300px;
+        }
+
+        .playerName {
+            border: 1px solid #000;
+            background-color: #fff; /* 弹出窗口背景色 */
+            padding: 20px;
+            border-radius: 5px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.3); /* 添加阴影效果 */
+            width: 60%;
+        }
+
+        .modal-background {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5); /* 设置半透明黑色背景 */
+            z-index: 9999; /* 确保在最顶层 */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .WinnerAlert{
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5); /* 设置半透明黑色背景 */
+            z-index: 9999; /* 确保在最顶层 */
+            display: none;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .WinnerContent{
+            border: 1px solid #000;
+            background-color: #fff; /* 弹出窗口背景色 */
+            padding: 20px;
+            border-radius: 5px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.3); /* 添加阴影效果 */
+            width: 60%;
+        }
+    </style>
+</head>
+<body>
+   <button id="playWithcomputer">和電腦玩</button>
+    <h4>個人 ID: <span id="SelfID"></span></h4>
+    <div class="col-4">
+        <h4>連線 ID 列表</h4>
+        <ul class="list-group" id="IDList">
+        </ul>
+    </div>
+    <div>
+        <div id="playerpiece">
+            你是
+            <div id="playercolor"></div>
+        </div>
+    </div>
+    <div id="place">
+        位置：
+    </div>
+    <div class="grid-container" id="grid-container">
+    </div>
+    
+    <div class="step" id="step">
+    </div>
+    <div class="modal-background">
+        <div class="playerName">
+            <h2>輸入玩家名稱</h2>
+            <input class="form-control" type="text" name="playerName" id="playerName" />
+            <button id="NameConfirm">確認</button>
+        </div>
+    </div>
+    <div class="WinnerAlert">
+        <div class="WinnerContent">
+            <span id="WinnerContent"></span>
+           
+        </div>
+        <button id="restart">重新開始</button>
+    </div>
+</body>
+
+</html>
+
+
+
+@section scripts {
+
+    <script src="~/js/signalr/dist/browser/signalr.js"></script>
+       
+        
+    <script>
+        //和電腦玩
+        $('#playWithcomputer').on('click', function () {
+            connection.invoke("playWithcomputer").catch(function (err) {
+                alert('傳送錯誤: ' + err.toString());
+            });
+        });
+        var connection = new signalR.HubConnectionBuilder().withUrl("/chatHub").build();
+        // 获取 grid 容器
+        var gridContainer = document.getElementById("grid-container");
+        //與Server建立連線
+        connection.start().then(function () {
+            console.log("Hub 連線完成");
+        }).catch(function (err) {
+            alert('連線錯誤: ' + err.toString());
+        });
+
+        // 更新連線 ID 列表事件
+        $('#NameConfirm').on('click', function () {
+            var playerName = $('#playerName').val();
+            connection.invoke("NameCheck", playerName).catch(function (err) {
+                alert('傳送錯誤: ' + err.toString());
+            });
+            console.log("NameConfirm完成");
+        });
+
+        // 更新連線 ID 列表事件
+        connection.on("UpdList", function (jsonList) {
+            var list = JSON.parse(jsonList);
+            $("#IDList li").remove();
+            for (i = 0; i < list.length; i++) {
+                var Ready = list[i].Ready == true ? "已準備" : "未準備"
+                $("#IDList").append(
+                    $("<li></li>").attr("class", "list-group-item").text(list[i].Player).append(
+                        $("<div></div>").addClass("player" + (i + 1)),
+                        $("<span></span>").text(Ready)
+                    )
+                );
+            }
+        });
+
+        // 更新用戶個人連線 ID 事件
+        connection.on("UpdSelfID", function (id) {
+            $('#SelfID').html(id);
+        });
+
+        // 更新聊天內容事件
+        connection.on("UpdContent", function (msg) {
+            $("#Content").append($("<li></li>").attr("class", "list-group-item").text(msg));
+        });
+
+
+        connection.on("Updpiece", function (msg, row, col, player) {
+            $("#step").append($("<li></li>").attr("class", "list-group-item").text(msg));
+
+            if (player == "A") {
+                $(".grid-item[data-row='" + row + "'][data-col='" + col + "'] button").css("background-color", "black").prop("disabled", true);
+                $(".player2").closest("li").addClass("active");
+                $(".player1").closest("li").removeClass("active");
+            } else {
+                $(".grid-item[data-row='" + row + "'][data-col='" + col + "'] button").css("background-color", "white").prop("disabled", true);
+                $(".player2").closest("li").removeClass("active");
+                $(".player1").closest("li").addClass("active");
+            }
+        });
+        connection.on("Error", function (err) {
+            alert('傳送錯誤: ' + err.toString());
+        });
+        connection.on("NewConnect", function (playerID) {
+            var player = playerID == "A" ? "player1" : "player2";
+            var content = playerID == "A" ? "黑色棋子" : "白色棋子";
+            $(".modal-background").css("display", "none");
+            $("#playercolor").addClass(player).addClass("pieces");
+            $("#playerpiece").append(content);
+        });
+
+        connection.on("GameStart", function () {
+            $(".player1").closest("li").addClass("active");
+            $('#step li').remove();
+            resetBoard();
+        });
+        connection.on("Winner", function (Winner) {
+            $(".WinnerAlert").css("display", "flex");
+            $(".WinnerContent").html(Winner + ' 勝利');
+            $('li span').html("未準備");
+        });
+
+        connection.on("Test1", function (data) {
+            // 解析收到的 JSON 字符串
+            var gradeData = JSON.parse(data);
+
+            // 创建一个新的二维数组来存储整数数据
+            var gradeArray = [];
+
+            // 遍历嵌套数组并将字符串转换为整数
+            for (var i = 0; i < gradeData.length; i++) {
+                var innerArray = [];
+                for (var j = 0; j < gradeData[i].length; j++) {
+                    // 使用parseInt函数将字符串转换为整数，忽略非数值元素
+                    var value = parseInt(gradeData[i][j]);
+                    if (!isNaN(value)) {
+                        innerArray.push(value);
+                    }
+                }
+                gradeArray.push(innerArray);
+            }
+            console.log(gradeArray);
+        });
+        $('#restart').on('click', function () {
+            var playerID = $('#SelfID').html();
+            connection.invoke("PlayerReady", playerID).catch(function (err) {
+                alert('傳送錯誤: ' + err.toString());
+            });
+            console.log("重新開始");
+            $(".WinnerAlert").css("display", "none");
+            $('#step li').remove();
+        });
+        // 创建 15x15 的 div 网格
+        function resetBoard() {
+            $("#grid-container button").attr("disabled", "True");
+            gridContainer.innerHTML = "";
+            for (var i = 0; i < 15; i++) {
+                for (var j = 0; j < 15; j++) {
+                    // 创建 div 元素
+                    var div = document.createElement("div");
+                    div.className = "grid-item";
+                    div.dataset.row = i;
+                    div.dataset.col = j;
+                    div.addEventListener('click', SetPiece);
+                    div.addEventListener('mouseover', showPlace);
+                    // 添加到 grid 容器中
+                    gridContainer.appendChild(div);
+                    var item = document.createElement("button");
+                    item.className = "piece";
+                    div.appendChild(item);
+                }
+            }
+        }
+
+        function showPlace() {
+            var place = document.getElementById("place");
+            const row = parseInt(this.dataset.row);
+            const col = parseInt(this.dataset.col);
+            place.textContent = row + " " + col;
+        }
+
+        //傳送訊息
+        function SetPiece() {
+            console.log("asdasd");
+
+            var row = parseInt(this.dataset.row);
+            console.log("row" + row);
+            var col = parseInt(this.dataset.col);
+            console.log("col" + col);
+            var playerID = $('#SelfID').html();
+            console.log("playerID" + playerID);
+
+            connection.invoke("SetPiece", row, col, playerID,).catch(function (err) {
+                alert('傳送錯誤: ' + err.toString());
+            });
+        }
+    </script>
+}
